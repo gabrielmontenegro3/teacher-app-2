@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/userRoutes.js';
 import questionRoutes from './routes/questionRoutes.js';
 import answerRoutes from './routes/answerRoutes.js';
-import { findAvailablePort, tryFreePort, isPortInUse } from './utils/portChecker.js';
 
 dotenv.config();
 
@@ -75,6 +74,14 @@ async function startServer() {
   let port = DEFAULT_PORT;
 
   try {
+    // Na Vercel, não precisamos verificar portas
+    if (process.env.VERCEL) {
+      return;
+    }
+
+    // Importar portChecker dinamicamente apenas quando necessário (local)
+    const { isPortInUse, tryFreePort, findAvailablePort } = await import('./utils/portChecker.js');
+    
     // Verificar se a porta está em uso
     const portInUse = await isPortInUse(port);
 
@@ -165,7 +172,8 @@ async function startServer() {
   }
 }
 
-// Exportar app para Vercel (serverless function)
+// Handler para Vercel (serverless function)
+// A Vercel espera que exportemos o app Express diretamente
 export default app;
 
 // Iniciar servidor apenas em ambiente local (não na Vercel)
