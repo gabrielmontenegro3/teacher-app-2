@@ -16,29 +16,37 @@ const corsOptions = {
     // Permitir requisições sem origin (mobile apps, Postman, etc)
     if (!origin) return callback(null, true);
     
-    // Em desenvolvimento, permitir todas as origens
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    
-    // Em produção, permitir origens específicas
+    // Lista de origens permitidas
     const allowedOrigins = [
+      // Desenvolvimento local
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:5173',
       'http://localhost:5174',
-      process.env.FRONTEND_URL, // URL do frontend na Vercel (configure na Vercel)
-      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null, // URL da Vercel
+      // Frontend em produção (Vercel)
+      'https://teacher-app-2-frontend.vercel.app',
+      // Variáveis de ambiente (para flexibilidade)
+      process.env.FRONTEND_URL,
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
     ].filter(Boolean);
     
-    // Se a origem estiver na lista ou se FRONTEND_URL não estiver configurado (permitir todas temporariamente)
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+    // Em desenvolvimento, permitir todas as origens para facilitar testes
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // Em produção, verificar se a origem está na lista permitida
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.warn(`⚠️  Requisição bloqueada por CORS de origem: ${origin}`);
       callback(new Error('Não permitido pelo CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200 // Para navegadores legados
 };
 
 // Middlewares
