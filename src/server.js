@@ -11,8 +11,39 @@ dotenv.config();
 const app = express();
 const DEFAULT_PORT = parseInt(process.env.PORT) || 3001;
 
+// Configurar CORS para aceitar múltiplas origens (localhost e Vercel)
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+    
+    // Em desenvolvimento, permitir todas as origens
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // Em produção, permitir origens específicas
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      process.env.FRONTEND_URL, // URL do frontend na Vercel (configure na Vercel)
+      process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null, // URL da Vercel
+    ].filter(Boolean);
+    
+    // Se a origem estiver na lista ou se FRONTEND_URL não estiver configurado (permitir todas temporariamente)
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Não permitido pelo CORS'));
+    }
+  },
+  credentials: true
+};
+
 // Middlewares
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Rotas
@@ -22,7 +53,13 @@ app.use('/api/questions', answerRoutes); // Respostas: /api/questions/:question_
 
 // Rota de health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Servidor está funcionando', port: DEFAULT_PORT });
+  res.json({ 
+    status: 'OK', 
+    message: 'Servidor está funcionando', 
+    port: DEFAULT_PORT,
+    environment: process.env.NODE_ENV || 'development',
+    vercelUrl: process.env.VERCEL_URL || 'local'
+  });
 });
 
 // Middleware de tratamento de erros
@@ -128,5 +165,11 @@ async function startServer() {
   }
 }
 
-// Iniciar servidor
-startServer();
+// Exportar app para Vercel (serverless function)
+export default app;
+
+// Iniciar servidor apenas em ambiente local (não na Vercel)
+// A Vercel define automaticamente a variável VERCEL=true
+if (!process.env.VERCEL) {
+  startServer();
+}
