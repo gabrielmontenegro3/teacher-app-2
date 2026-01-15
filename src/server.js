@@ -45,10 +45,21 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// Rotas
-app.use('/api/users', userRoutes);
-app.use('/api/questions', questionRoutes);
-app.use('/api/questions', answerRoutes); // Respostas: /api/questions/:question_id/answers
+// Rota raiz
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'API Teacher App Backend',
+    version: '1.0.0',
+    endpoints: {
+      health: '/health',
+      api: '/api',
+      users: '/api/users',
+      questions: '/api/questions',
+      answers: '/api/questions/:id/answers'
+    }
+  });
+});
 
 // Rota de health check
 app.get('/health', (req, res) => {
@@ -57,9 +68,15 @@ app.get('/health', (req, res) => {
     message: 'Servidor está funcionando', 
     port: DEFAULT_PORT,
     environment: process.env.NODE_ENV || 'development',
-    vercelUrl: process.env.VERCEL_URL || 'local'
+    vercelUrl: process.env.VERCEL_URL || 'local',
+    timestamp: new Date().toISOString()
   });
 });
+
+// Rotas da API
+app.use('/api/users', userRoutes);
+app.use('/api/questions', questionRoutes);
+app.use('/api/questions', answerRoutes); // Respostas: /api/questions/:question_id/answers
 
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
