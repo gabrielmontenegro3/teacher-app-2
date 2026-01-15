@@ -121,3 +121,122 @@ export const getAnswersByQuestion = async (req, res) => {
     res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
   }
 };
+
+export const updateAnswer = async (req, res) => {
+  try {
+    const { question_id, answer_id } = req.params;
+    const { student_id, answer: answerText } = req.body;
+
+    // Verificar se a resposta existe
+    const { data: answer, error: answerError } = await supabase
+      .from('answers')
+      .select('*')
+      .eq('id', answer_id)
+      .eq('question_id', question_id)
+      .single();
+
+    if (answerError || !answer) {
+      return res.status(404).json({ error: 'Resposta não encontrada' });
+    }
+
+    // Verificar se o student_id fornecido é o criador da resposta
+    if (answer.student_id !== parseInt(student_id)) {
+      return res.status(403).json({ error: 'Você só pode modificar suas próprias respostas' });
+    }
+
+    // Verificar se o usuário existe e é um student
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', student_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.role !== 'student') {
+      return res.status(403).json({ error: 'Apenas alunos podem modificar respostas' });
+    }
+
+    // Atualizar a resposta
+    const { data, error } = await supabase
+      .from('answers')
+      .update({
+        answer: answerText.trim()
+      })
+      .eq('id', answer_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar resposta:', error);
+      return res.status(500).json({ error: 'Erro ao atualizar resposta', details: error.message });
+    }
+
+    res.json({
+      message: 'Resposta atualizada com sucesso',
+      answer: data
+    });
+  } catch (error) {
+    console.error('Erro inesperado:', error);
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  }
+};
+
+export const deleteAnswer = async (req, res) => {
+  try {
+    const { question_id, answer_id } = req.params;
+    const { student_id } = req.body;
+
+    // Verificar se a resposta existe
+    const { data: answer, error: answerError } = await supabase
+      .from('answers')
+      .select('*')
+      .eq('id', answer_id)
+      .eq('question_id', question_id)
+      .single();
+
+    if (answerError || !answer) {
+      return res.status(404).json({ error: 'Resposta não encontrada' });
+    }
+
+    // Verificar se o student_id fornecido é o criador da resposta
+    if (answer.student_id !== parseInt(student_id)) {
+      return res.status(403).json({ error: 'Você só pode excluir suas próprias respostas' });
+    }
+
+    // Verificar se o usuário existe e é um student
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', student_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.role !== 'student') {
+      return res.status(403).json({ error: 'Apenas alunos podem excluir respostas' });
+    }
+
+    // Excluir a resposta
+    const { error } = await supabase
+      .from('answers')
+      .delete()
+      .eq('id', answer_id);
+
+    if (error) {
+      console.error('Erro ao excluir resposta:', error);
+      return res.status(500).json({ error: 'Erro ao excluir resposta', details: error.message });
+    }
+
+    res.json({
+      message: 'Resposta excluída com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro inesperado:', error);
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  }
+};

@@ -133,3 +133,121 @@ export const getQuestionById = async (req, res) => {
     res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
   }
 };
+
+export const updateQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { teacher_id, title, description } = req.body;
+
+    // Verificar se a pergunta existe
+    const { data: question, error: questionError } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (questionError || !question) {
+      return res.status(404).json({ error: 'Pergunta não encontrada' });
+    }
+
+    // Verificar se o teacher_id fornecido é o criador da pergunta
+    if (question.teacher_id !== parseInt(teacher_id)) {
+      return res.status(403).json({ error: 'Você só pode modificar suas próprias perguntas' });
+    }
+
+    // Verificar se o usuário existe e é um teacher
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', teacher_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Apenas professores podem modificar perguntas' });
+    }
+
+    // Atualizar a pergunta
+    const { data, error } = await supabase
+      .from('questions')
+      .update({
+        title: title.trim(),
+        description: description.trim()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar pergunta:', error);
+      return res.status(500).json({ error: 'Erro ao atualizar pergunta', details: error.message });
+    }
+
+    res.json({
+      message: 'Pergunta atualizada com sucesso',
+      question: data
+    });
+  } catch (error) {
+    console.error('Erro inesperado:', error);
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  }
+};
+
+export const deleteQuestion = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { teacher_id } = req.body;
+
+    // Verificar se a pergunta existe
+    const { data: question, error: questionError } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (questionError || !question) {
+      return res.status(404).json({ error: 'Pergunta não encontrada' });
+    }
+
+    // Verificar se o teacher_id fornecido é o criador da pergunta
+    if (question.teacher_id !== parseInt(teacher_id)) {
+      return res.status(403).json({ error: 'Você só pode excluir suas próprias perguntas' });
+    }
+
+    // Verificar se o usuário existe e é um teacher
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', teacher_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    if (user.role !== 'teacher') {
+      return res.status(403).json({ error: 'Apenas professores podem excluir perguntas' });
+    }
+
+    // Excluir a pergunta (as respostas serão excluídas em cascata se houver foreign key constraint)
+    const { error } = await supabase
+      .from('questions')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Erro ao excluir pergunta:', error);
+      return res.status(500).json({ error: 'Erro ao excluir pergunta', details: error.message });
+    }
+
+    res.json({
+      message: 'Pergunta excluída com sucesso'
+    });
+  } catch (error) {
+    console.error('Erro inesperado:', error);
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  }
+};
