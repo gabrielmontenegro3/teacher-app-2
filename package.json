@@ -1,0 +1,20 @@
+{
+  "name": "teacher-app-backend",
+  "version": "1.0.0",
+  "description": "Backend para aplicação de perguntas e respostas entre professores e alunos",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": ["express", "supabase", "api"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
