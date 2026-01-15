@@ -212,11 +212,6 @@ export const deleteQuestion = async (req, res) => {
       return res.status(404).json({ error: 'Pergunta não encontrada' });
     }
 
-    // Verificar se o teacher_id fornecido é o criador da pergunta
-    if (question.teacher_id !== parseInt(teacher_id)) {
-      return res.status(403).json({ error: 'Você só pode excluir suas próprias perguntas' });
-    }
-
     // Verificar se o usuário existe e é um teacher
     const { data: user, error: userError } = await supabase
       .from('users')
@@ -232,7 +227,8 @@ export const deleteQuestion = async (req, res) => {
       return res.status(403).json({ error: 'Apenas professores podem excluir perguntas' });
     }
 
-    // Excluir a pergunta (as respostas serão excluídas em cascata se houver foreign key constraint)
+    // Excluir a pergunta (qualquer professor pode excluir qualquer pergunta)
+    // As respostas serão excluídas em cascata se houver foreign key constraint
     const { error } = await supabase
       .from('questions')
       .delete()
