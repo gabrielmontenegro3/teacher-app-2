@@ -19,16 +19,27 @@ export const validateUser = (req, res, next) => {
 export const validateQuestion = (req, res, next) => {
   const { title, description } = req.body;
 
-  if (!title || typeof title !== 'string' || title.trim().length === 0) {
-    return res.status(400).json({ error: 'Título é obrigatório e deve ser uma string válida' });
+  // Pelo menos um dos dois (título ou descrição) deve estar presente
+  const hasTitle = title && typeof title === 'string' && title.trim().length > 0;
+  const hasDescription = description && typeof description === 'string' && description.trim().length > 0;
+
+  if (!hasTitle && !hasDescription) {
+    return res.status(400).json({ error: 'Pelo menos um dos campos (título ou descrição) é obrigatório' });
   }
 
-  if (title.length > 200) {
-    return res.status(400).json({ error: 'Título deve ter no máximo 200 caracteres' });
+  // Validar título se fornecido
+  if (hasTitle) {
+    if (title.length > 200) {
+      return res.status(400).json({ error: 'Título deve ter no máximo 200 caracteres' });
+    }
   }
 
-  if (!description || typeof description !== 'string' || description.trim().length === 0) {
-    return res.status(400).json({ error: 'Descrição é obrigatória e deve ser uma string válida' });
+  // Validar descrição se fornecida
+  if (hasDescription) {
+    // Descrição pode ter qualquer tamanho, mas vamos validar se é string
+    if (typeof description !== 'string') {
+      return res.status(400).json({ error: 'Descrição deve ser uma string válida' });
+    }
   }
 
   next();

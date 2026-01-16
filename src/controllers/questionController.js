@@ -19,15 +19,24 @@ export const createQuestion = async (req, res) => {
       return res.status(403).json({ error: 'Apenas professores podem criar perguntas' });
     }
 
+    // Preparar dados para inserção (apenas campos fornecidos)
+    const questionData = {
+      teacher_id: teacher_id
+    };
+
+    // Adicionar título se fornecido
+    if (title && typeof title === 'string' && title.trim().length > 0) {
+      questionData.title = title.trim();
+    }
+
+    // Adicionar descrição se fornecida
+    if (description && typeof description === 'string' && description.trim().length > 0) {
+      questionData.description = description.trim();
+    }
+
     const { data, error } = await supabase
       .from('questions')
-      .insert([
-        {
-          teacher_id: teacher_id,
-          title: title.trim(),
-          description: description.trim()
-        }
-      ])
+      .insert([questionData])
       .select()
       .single();
 
@@ -170,13 +179,41 @@ export const updateQuestion = async (req, res) => {
       return res.status(403).json({ error: 'Apenas professores podem modificar perguntas' });
     }
 
+    // Preparar dados para atualização (apenas campos fornecidos)
+    const updateData = {};
+
+    // Adicionar título se fornecido
+    if (title !== undefined) {
+      if (title && typeof title === 'string' && title.trim().length > 0) {
+        updateData.title = title.trim();
+      } else if (title === null || title === '') {
+        // Permitir remover o título definindo como null
+        updateData.title = null;
+      }
+    }
+
+    // Adicionar descrição se fornecida
+    if (description !== undefined) {
+      if (description && typeof description === 'string' && description.trim().length > 0) {
+        updateData.description = description.trim();
+      } else if (description === null || description === '') {
+        // Permitir remover a descrição definindo como null
+        updateData.description = null;
+      }
+    }
+
+    // Validar que pelo menos um campo (título ou descrição) permaneça após atualização
+    const finalTitle = updateData.title !== undefined ? updateData.title : question.title;
+    const finalDescription = updateData.description !== undefined ? updateData.description : question.description;
+
+    if (!finalTitle && !finalDescription) {
+      return res.status(400).json({ error: 'A pergunta deve ter pelo menos título ou descrição' });
+    }
+
     // Atualizar a pergunta
     const { data, error } = await supabase
       .from('questions')
-      .update({
-        title: title.trim(),
-        description: description.trim()
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
